@@ -17,10 +17,7 @@ public class WalletController(IWalletService walletService, IWalletValidationSer
     public async Task<IActionResult> AddWalletAsync([FromBody] WalletDto walletDto)
     {
 
-        if (walletDto is null)
-        {
-            return BadRequest(ModelState);
-        }
+        if (walletDto is null) return BadRequest(ModelState);
 
         if (!await walletValidationService.IsAccountNumberUniqueAsync(walletDto.AccountNumber))
         {
@@ -62,11 +59,10 @@ public class WalletController(IWalletService walletService, IWalletValidationSer
     [HttpGet("{id}")]
     public async Task<IActionResult> GetWalletById(Guid id)
     {
-        if(id == Guid.Empty)
-        {
-            return BadRequest("Invalid wallet id provided.");
-        }
+        if (id == Guid.Empty) return BadRequest("Invalid wallet id provided.");
+
         var wallet = await walletService.GetWalletAsync(id);
+
         return wallet switch
         {
             null => NotFound(),
@@ -83,18 +79,14 @@ public class WalletController(IWalletService walletService, IWalletValidationSer
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteWallet(Guid id)
     {
-        if (id == Guid.Empty)
-        {
-            return BadRequest("Invalid wallet id provided.");
-        }
+        if (id == Guid.Empty) return BadRequest("Invalid wallet id provided.");
+
         var wallet = await walletService.GetWalletAsync(id);
 
-        if (wallet is null)
-        {
-            return NotFound();
-        }
+        if (wallet is null) return NotFound();
 
-        var result = await walletService.RemoveWalletAsync(id);
+        await walletService.RemoveWalletAsync(id);
+
         return NoContent();
     }
 }
