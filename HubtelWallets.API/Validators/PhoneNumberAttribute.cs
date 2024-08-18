@@ -7,7 +7,7 @@ public class PhoneNumberAttribute : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        if (value == null || !(value is string))
+        if (value is null || !(value is string))
             return new ValidationResult(ErrorMessage ?? "Invalid phone number format.");
 
         var phoneNumber = value as string ?? "";
