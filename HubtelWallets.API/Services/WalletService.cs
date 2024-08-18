@@ -32,14 +32,7 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
         ValidateWallet(wallet);
 
 
-        if (wallet.Type == WalletType.card)
-        {
-            if (!IsValidCardNumber(wallet.AccountNumber, wallet.AccountScheme))
-            {
-                throw new ArgumentException("Invalid card number provided for the specified Account Scheme.");
-            }
-            wallet.AccountNumber = wallet.AccountNumber.Substring(0, 6);
-        }
+
 
         await _context.Wallets.AddAsync(wallet);
         await _context.SaveChangesAsync();
@@ -116,6 +109,15 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
 
     internal void ValidateWallet(Wallet wallet)
     {
+        if (wallet.Type == WalletType.card)
+        {
+            if (!IsValidCardNumber(wallet.AccountNumber, wallet.AccountScheme))
+            {
+                throw new ArgumentException("Invalid card number provided for the specified Account Scheme.");
+            }
+            wallet.AccountNumber = wallet.AccountNumber.Substring(0, 6);
+        }
+
         if (wallet.Type != WalletType.momo && wallet.Type != WalletType.card)
         {
             throw new ArgumentException("Invalid wallet type. Only 'momo' or 'card' are accepted.");
