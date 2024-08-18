@@ -6,10 +6,11 @@ using HubtelWallets.API.Models;
 
 namespace HubtelWallets.API.Services;
 
-public class WalletService(WalletContext context, ILogger<WalletService> logger) : IWalletService
+public class WalletService(WalletContext context, ILogger<WalletService> logger, IWalletValidationService walletValidationService) : IWalletService
 {
     private readonly WalletContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly ILogger<WalletService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IWalletValidationService _walletValidationService = walletValidationService ?? throw new ArgumentNullException(nameof(walletValidationService));
 
     public async Task<WalletResponseDto> AddWalletAsync(WalletDto walletDto)
     {
@@ -29,7 +30,7 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
             CreatedAt = DateTime.UtcNow
         };
 
-        ValidateWallet(wallet);
+        _walletValidationService.ValidateWallet(wallet);
 
         await _context.Wallets.AddAsync(wallet);
         await _context.SaveChangesAsync();
@@ -52,17 +53,9 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
 
     public async Task<PaginationInfo<WalletResponseDto>> GetWalletsAsync()
     {
-        var query = _context.Wallets.Select(w => new WalletResponseDto(
-            w.Id,
-            w.Name,
-            w.AccountNumber,
-            w.AccountScheme.ToString(),
-            w.Type.ToString(),
-            w.Owner,
-            w.CreatedAt
-        ));
-        var pagedResponse = await PagedList<WalletResponseDto>.ToPageableAsync(query, 1, 10);
+        var query = _context.Wallets.Select(w => WalletResponseDto.FromWallet(w));
 
+        var pagedResponse = await PagedList<WalletResponseDto>.ToPageableAsync(query, 1, 10);
 
         return new PaginationInfo<WalletResponseDto>
         {
@@ -86,44 +79,5 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
 
         _logger.LogInformation("Wallet removed successfully: {WalletId}", id);
         return true;
-    }
-
-    internal void ValidateWallet(Wallet wallet)
-    {
-        if (wallet.Type == WalletType.card)
-        {
-            if (!IsValidCardNumber(wallet.AccountNumber, wallet.AccountScheme))
-            {
-                throw new ArgumentException("Invalid card number provided for the specified Account Scheme.");
-            }
-            wallet.AccountNumber = wallet.AccountNumber.Substring(0, 6);
-        }
-
-        if (wallet.Type != WalletType.momo && wallet.Type != WalletType.card)
-        {
-            throw new ArgumentException("Invalid wallet type. Only 'momo' or 'card' are accepted.");
-        }
-
-        if (!Enum.IsDefined(typeof(WalletAccountScheme), wallet.AccountScheme))
-        {
-            throw new ArgumentException("Invalid account scheme provided.");
-        }
-    }
-
-    internal bool IsValidCardNumber(string cardNumber, WalletAccountScheme accountScheme)
-    {
-        cardNumber = new string(cardNumber.Where(char.IsDigit).ToArray());
-
-        return accountScheme switch
-        {
-            WalletAccountScheme.visa => cardNumber.StartsWith("4") && cardNumber.Length == 16,
-            WalletAccountScheme.mastercard => (cardNumber.StartsWith("51") || cardNumber.StartsWith("52") ||
-                                        cardNumber.StartsWith("53") || cardNumber.StartsWith("54") ||
-                                        cardNumber.StartsWith("55") ||
-                                        (cardNumber.CompareTo("2221000000000000") >= 0 &&
-                                         cardNumber.CompareTo("2720999999999999") <= 0)) &&
-                                       cardNumber.Length == 16,
-            _ => false,
-        };
     }
 }
