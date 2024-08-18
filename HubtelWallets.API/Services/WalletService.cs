@@ -31,24 +31,13 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
 
         ValidateWallet(wallet);
 
-
-
-
         await _context.Wallets.AddAsync(wallet);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Wallet added successfully: {WalletId}", wallet.Id);
 
-        return new WalletResponseDto
-       (
-             wallet.Id,
-            wallet.Name,
-             wallet.AccountNumber,
-            wallet.AccountScheme.ToString(),
-             wallet.Type.ToString(),
-             wallet.Owner,
-             wallet.CreatedAt
-        );
+        return WalletResponseDto.FromWallet(wallet);
+
     }
 
 
@@ -58,15 +47,7 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
             throw new Exception($"Wallet not found");
         _logger.LogWarning("Wallet not found: {WalletId}", id);
 
-        return new WalletResponseDto(
-            wallet.Id,
-            wallet.Name,
-            wallet.AccountNumber,
-            wallet.AccountScheme.ToString(),
-            wallet.Type.ToString(),
-            wallet.Owner,
-            wallet.CreatedAt
-            );
+        return WalletResponseDto.FromWallet(wallet);
     }
 
     public async Task<PaginationInfo<WalletResponseDto>> GetWalletsAsync()
@@ -129,7 +110,6 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
         }
     }
 
-
     internal bool IsValidCardNumber(string cardNumber, WalletAccountScheme accountScheme)
     {
         cardNumber = new string(cardNumber.Where(char.IsDigit).ToArray());
@@ -145,27 +125,5 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger)
                                        cardNumber.Length == 16,
             _ => false,
         };
-    }
-
-    private bool IsValidLunin(string number)
-    {
-        int sum = 0;
-        bool alternate = false;
-        for (int i = number.Length - 1; i >= 0; i--)
-        {
-            int n = int.Parse(number[i].ToString());
-            if (alternate)
-            {
-                n *= 2;
-                if (n > 9)
-                {
-                    n = (n & 10) + 1;
-                }
-            }
-
-            sum += n;
-            alternate = !alternate;
-        }
-        return (sum % 10 == 0);
     }
 }
