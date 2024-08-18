@@ -14,10 +14,7 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger,
 
     public async Task<WalletResponseDto> AddWalletAsync(WalletDto walletDto)
     {
-        if (walletDto == null)
-        {
-            throw new ArgumentNullException(nameof(walletDto));
-        }
+        if (walletDto is null) throw new ArgumentNullException(nameof(walletDto));
 
         var wallet = new Wallet
         {
@@ -68,7 +65,7 @@ public class WalletService(WalletContext context, ILogger<WalletService> logger,
     public async Task<bool> RemoveWalletAsync(Guid id)
     {
         var wallet = await _context.Wallets.FindAsync(id);
-        if (wallet == null)
+        if (wallet is null)
         {
             _logger.LogWarning("Wallet not found: {WalletId}", id);
             return false;
